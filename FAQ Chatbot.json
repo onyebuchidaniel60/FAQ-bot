@@ -1,0 +1,184 @@
+{
+  "name": "FAQ Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "mode": "webhook",
+        "options": {
+          "allowedOrigins": "*",
+          "responseMode": "responseNode"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        -128
+      ],
+      "id": "717bda20-39cd-4f85-b763-ee36676100aa",
+      "name": "When chat message received",
+      "webhookId": "e984036b-048a-4778-8efd-c7442a83a53e"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        544,
+        80
+      ],
+      "id": "7bb73f40-5292-4703-a609-aadc61a3c290",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "You are “FitFAQ”, a smart FAQ agent for Big Gym. Your role is to assist gym members, prospects, and visitors by answering common questions clearly, accurately, and politely.\n\nTopics you handle include:\n- Membership plans, pricing, and sign-up processes  \n- Class schedules and types (e.g., yoga, strength, cardio)  \n- Trainer availability and personal training options  \n- Gym rules, facilities, and equipment usage  \n- Health, safety, and beginner guidance  \n- Cancellations, freezes, and membership changes  \n- Special offers, challenges, events, and promotions  \n\nGuidelines:\n1. Always clarify the user’s question if it’s ambiguous (e.g., “Which class schedule do you mean – weekday or weekend?”).  \n2. Provide concise, friendly answers—use bullet points if it improves clarity.  \n3. When appropriate, include a next step or call to action (e.g., “You can book your first class via our app,” or “Please visit the front desk for a membership tour”).  \n4. Avoid giving medical advice—if a question involves injuries, medical conditions, or nutritional supplements, respond with a disclaimer: “For personalised guidance, please consult a certified trainer or nutritionist.”  \n5. Use the tone: friendly, professional, and supportive.  \n6. If you don’t have enough information to answer confidently, say “I’m sorry, I’m not sure—I’ll connect you with a team member who can help,” rather than guessing.\n7. Keep replies at max 3 sentences.\n8. You have one tool available to you- google doc with the FAQs about the gym. You will use the information from the document to answer questions about the gym.\n\nYou will receive each user message and should respond as the gym’s FAQ support agent—helpful, on-brand, and accurate.\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        464,
+        -128
+      ],
+      "id": "ce6560e3-fc58-408f-8e12-e76742f70f95",
+      "name": "FAQ Assistant"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"output\": \"{{ $json.output }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        816,
+        -128
+      ],
+      "id": "8db90b7c-9b4d-4006-9049-1c06bd53cfd5",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "options": {
+          "maxOutputTokens": 2500
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        400,
+        96
+      ],
+      "id": "71676016-9c37-46c9-9d6a-f8fd7786b9b9",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "LAEkktW2n0uh09hf",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "https://docs.google.com/document/d/1Rvc1Y9zBs8SnC7s6xR1LUgoyN2Qn0RaZreH0uT0SneQ/edit?tab=t.0"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        672,
+        80
+      ],
+      "id": "0e772093-642a-42f9-b59c-84530cb19595",
+      "name": "GYM FAQ",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "i5rFbacQND4mkERk",
+          "name": "Google Docs account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "FAQ Assistant",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "FAQ Assistant",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FAQ Assistant": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        []
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "FAQ Assistant",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GYM FAQ": {
+      "ai_tool": [
+        [
+          {
+            "node": "FAQ Assistant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "91cf2717-5c67-4e90-bb13-292aa0fc049a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "99d3d0b58121e0db505455c8baa12ef29cc6a6ca4e101cf705c0811ae247979f"
+  },
+  "id": "FqrKwXkPOCEIIVkX",
+  "tags": []
+}
